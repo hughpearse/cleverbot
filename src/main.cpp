@@ -75,6 +75,22 @@ int main(int argc, char* argv[])
 			}
 		});
 		
+		// Essential read handler - do not remove!
+		// This handler is required to keep the connection alive
+		bot.add_read_handler([&bot](const std::string& m) {
+			std::istringstream iss(m);
+			std::string type, to, text;
+
+			iss >> type;
+			if (type == "PING") {
+				text = "";
+				while ((iss >> to)) {
+					text += to + " ";
+				}
+				bot.pong(text);
+			}
+		});
+		
 		// Main execution
 		bot.loop();
 	}
