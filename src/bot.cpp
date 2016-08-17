@@ -65,7 +65,7 @@ namespace clever_bot {
 				iss >> comm;
 				msg = iss.str();
 				msg.erase(0,4+comm.size());
-				message(comm, iss.str());
+				message(comm, msg);
 			}
 			else if (comm == "/q") {
 				iss >> comm;
