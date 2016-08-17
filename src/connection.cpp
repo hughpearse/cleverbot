@@ -85,11 +85,6 @@ namespace clever_bot {
 			close();
 		}
 		else {
-			if(std::string(m_buffer.data()).substr(0,4).compare("PING")==0) {
-				m_buffer[1] = 'O';
-				boost::asio::write(m_socket, boost::asio::buffer(std::string(m_buffer.data())));
-			}
-			
 			m_read_handler(std::string(m_buffer.data(), count));
 		
 			m_socket.async_read_some(boost::asio::buffer(m_buffer), 

@@ -45,7 +45,7 @@ namespace clever_bot {
 
 	void bot::write_handler()
 	{
-		std::string line, comm;
+		std::string line, comm, msg, chann;
 	
 		while (m_conn.alive()) {
 			std::getline(std::cin, line);
@@ -63,11 +63,17 @@ namespace clever_bot {
 			}
 			else if (comm == "/m") {
 				iss >> comm;
+				msg = iss.str();
+				msg.erase(0,4+comm.size());
 				message(comm, iss.str());
 			}
 			else if (comm == "/q") {
 				iss >> comm;
 				quit(comm);
+			}
+			else if (comm == "/op") {
+				iss >> comm >> chann;
+				op(comm, chann);
 			}
 		}
 	}
@@ -99,6 +105,16 @@ namespace clever_bot {
 	{
 		m_conn.write(std::string("JOIN ") + chann + " " + key);
 	}
+	
+	void bot::op(const std::string& nck, const std::string& chann)
+	{
+		m_conn.write(std::string("MODE ") + chann + " +o " + nck);
+	}
+	
+	void bot::pong(const std::string& to)
+	{
+		m_conn.write(std::string("PONG ") + to);
+	}
 
 	void bot::message(const std::string& receiver, const std::string& message)
 	{
@@ -109,6 +125,14 @@ namespace clever_bot {
 	{
 		m_conn.write(std::string("QUIT :") + message);
 		m_conn.close();
+	}
+	
+	bool bot::rightPass(const std::string& pass)
+	{
+		if(pass == m_config["PASSWD"])
+			return true;
+		else
+			return false;
 	}
 
 } // ns clever_bot
