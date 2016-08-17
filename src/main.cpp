@@ -3,9 +3,11 @@
 #include <chrono>
 #include <ctime>
 #include <boost/any.hpp>
+#include <boost/algorithm/string.hpp>
 #include <boost/algorithm/string/replace.hpp>
 #include "bot.h"
 #include "httplib.h"
+#include "logger.h"
 
 using namespace std;
 
@@ -20,7 +22,7 @@ int main(int argc, char* argv[])
 	
 		clever_bot::bot bot("irc.freenode.net", "8001");
 		//bot.nick("Bot-" + c.responseBody);
-		bot.nick("Bot-" + boost::replace_all_copy(c.responseBody, ".", "_"));
+		bot.nick("B" + boost::replace_all_copy(c.responseBody, ".", "_"));
 		bot.join("#example1");
 		
 		// Read handlers example (will be improved soon)
@@ -31,9 +33,20 @@ int main(int argc, char* argv[])
 			iss >> from >> type >> to >> msg;
 			
 			if (msg == ":!time") {
+				//check if private message, and reconfigre "to"
+				std::string destNick;
+				if(to == bot.nickname){
+					destNick = from;
+					boost::replace_all(destNick, ":", " ");
+					boost::replace_all(destNick, "!", " ");
+					std::vector<std::string> msgSenderVect;
+					boost::split(msgSenderVect, destNick, boost::is_any_of(" "));
+					to = msgSenderVect.at(1);
+				}
+				
 				std::time_t now = std::chrono::system_clock::to_time_t(
 					std::chrono::system_clock::now());
-					
+				
 				bot.message(to, std::ctime(&now));
 			}
 		});

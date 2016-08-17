@@ -2,13 +2,13 @@
 #include <string>
 #include <fstream>
 #include <sstream>
-
 #include "logger.h"
 #include "connection.h"
 #include "bot.h"
 
 namespace clever_bot {
-
+	std::string nickname;
+	
 	bot::bot(const std::string& config_file)
 	{
 		std::ifstream file(config_file);
@@ -99,6 +99,7 @@ namespace clever_bot {
 	{
 		m_conn.write(std::string("NICK ") + nck);
 		m_conn.write(std::string("USER ") + nck + " * * :" + nck);
+		nickname = nck;
 	}
 
 	void bot::join(const std::string& chann, std::string key)

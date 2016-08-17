@@ -11,6 +11,7 @@ namespace clever_bot {
 class bot
 {
 public:
+	std::string nickname;
 	bot(const std::string& config_file);
 	bot(const std::string& server, const std::string& port);
 	void nick(const std::string& nck);
