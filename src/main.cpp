@@ -2,9 +2,14 @@
 #include <cstdlib>
 #include <chrono>
 #include <ctime>
+#include <vector>
 #include <boost/any.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/algorithm/string/replace.hpp>
+#include <boost/filesystem.hpp>
+#include <boost/algorithm/string/join.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
+#include <boost/thread/thread.hpp>
 #include "bot.h"
 #include "httplib.h"
 #include "logger.h"
@@ -18,14 +23,13 @@ int main(int argc, char* argv[])
 		boost::asio::io_service io_service;
 		client c(io_service, "api.ipify.org", "/?format=txt");
 		io_service.run();
-		std::cout << c.responseBody << std::endl;
 	
 		clever_bot::bot bot("irc.freenode.net", "8001");
 		//bot.nick("Bot-" + c.responseBody);
 		bot.nick("B" + boost::replace_all_copy(c.responseBody, ".", "_"));
 		bot.join("#example1");
 		
-		// Read handlers example (will be improved soon)
+		// Echo Read handler
 		bot.add_read_handler([&bot](const std::string& m) {
 			std::istringstream iss(m);
 			std::string from, type, to, msg;
@@ -48,6 +52,56 @@ int main(int argc, char* argv[])
 					std::chrono::system_clock::now());
 				
 				bot.message(to, std::ctime(&now));
+			}
+		});
+
+		// Directory list read handler
+		bot.add_read_handler([&bot](const std::string& m) {
+			std::istringstream iss(m);
+			std::string from, type, to, msg, text;
+			
+			iss >> from >> type >> to >> msg;
+			
+			if (msg == ":!ls") {
+				//check if private message, and reconfigre "to"
+				std::string destNick;
+				if(to == bot.nickname){
+					destNick = from;
+					boost::replace_all(destNick, ":", " ");
+					boost::replace_all(destNick, "!", " ");
+					std::vector<std::string> msgSenderVect;
+					boost::split(msgSenderVect, destNick, boost::is_any_of(" "));
+					to = msgSenderVect.at(1);
+				}
+
+				text = "";
+				std::vector<std::string> my_file_list;
+				while ((iss >> msg)) {
+					if (!msg.empty())
+					{
+						namespace fs = boost::filesystem;
+						fs::path my_path(msg);
+						fs::directory_iterator end;
+						
+						std::cout << "about to list" << std::endl;
+						for (fs::directory_iterator i(my_path); i != end; ++i)
+						{
+						    const fs::path cp = (*i);
+						    my_file_list.push_back(cp.string());
+						}
+						
+						text = boost::algorithm::join(my_file_list, "\n");
+					}
+				}
+				
+				if (text != "") {
+					//bot.message(to, text);
+					for(auto s : my_file_list){
+						bot.message(to, s);
+						//prevents bot getting kicked for excess flood
+						boost::this_thread::sleep(boost::posix_time::milliseconds(300));
+					}
+				}
 			}
 		});
 		
