@@ -2,8 +2,8 @@ cmake_minimum_required(VERSION 2.8)
 
 project(bot)
 
-#g++-mp-4.7 -std=c++11 -Wall main.cpp connection.cpp bot.cpp logger.cpp -o bot -lboost_system -ggdb
-#g++ -std=c++11 -Wall *.cpp -lboost_system -lboost_thread -lpthread -o bot
+#g++-mp-4.7 -std=c++11 -Wall main.cpp connection.cpp bot.cpp logger.cpp -o bot -lboost_system -ggdb -D_GNU_SOURCE
+#g++ -std=c++11 -Wall *.cpp -lboost_system -lboost_thread -lpthread -o bot -D_GNU_SOURCE
 
 file(GLOB SOURCES src/*.cpp)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "lib")

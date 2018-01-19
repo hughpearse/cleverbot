@@ -10,6 +10,10 @@
 #include <boost/algorithm/string/join.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/thread/thread.hpp>
+#include <boost/algorithm/string.hpp>
+#include <boost/filesystem/fstream.hpp>
+#include <arpa/inet.h>
+#include <netinet/in.h>
 #include "bot.h"
 #include "httplib.h"
 #include "logger.h"
@@ -29,7 +33,7 @@ int main(int argc, char* argv[])
 		bot.nick("B" + boost::replace_all_copy(c.responseBody, ".", "_"));
 		bot.join("#example1");
 		
-		// Echo Read handler
+		//handler to tell the time
 		bot.add_read_handler([&bot](const std::string& m) {
 			std::istringstream iss(m);
 			std::string from, type, to, msg;
@@ -105,6 +109,7 @@ int main(int argc, char* argv[])
 			}
 		});
 		
+		//handler to echo back text
 		bot.add_read_handler([&bot](const std::string& m) {
 			std::istringstream iss(m);
 			std::string from, type, to, msg, text;
@@ -123,6 +128,7 @@ int main(int argc, char* argv[])
 			}
 		});
 		
+		//handler to return an random number
 		bot.add_read_handler([&bot](const std::string& m) {
 			std::istringstream iss(m);
 			std::ostringstream oss;
@@ -157,6 +163,70 @@ int main(int argc, char* argv[])
 				bot.pong(text);
 			}
 		});
+
+		//detect DCC attempt
+		bot.add_read_handler([&bot](const std::string& m) {
+			std::istringstream iss(m);
+                        std::ostringstream oss;
+                        std::string from, type, to, msg, command, proto, ip, port;
+
+                        iss >> from >> type >> to >> msg >> command >> proto >> ip >> port;
+
+                        if (type == "PRIVMSG" && to == bot.nickname) {
+				if (msg == ":""\x01""DCC" && command == "CHAT" && proto == "chat") {
+					LOG("DCC-type", type);
+					LOG("DCC-to", to);
+					LOG("DCC-msg", msg);
+					LOG("DCC-command", command);
+					LOG("DCC-proto", proto);
+					int32_t ipInt = ntohl(std::stoi(ip));
+					struct in_addr ip_addr;
+					ip_addr.s_addr = ipInt;
+					LOG("DCC-ipInt", inet_ntoa(ip_addr));
+					int32_t portInt = std::stoi(port);
+					LOG("DCC-port", std::to_string(portInt));
+				}
+                        }
+                });
+
+		//download HTTP GET
+                bot.add_read_handler([&bot](const std::string& m) {
+                        std::istringstream iss(m);
+                        std::ostringstream oss;
+                        std::string from, type, to, msg, url;
+
+			iss >> from >> type >> to >> msg;
+			if (msg == ":!dl") {
+                                url = "";
+                                while ((iss >> msg)) {
+                                        url += msg + " ";
+                                }
+				
+				size_t found = url.find_first_of(":");
+				string protocol=url.substr(0,found);
+				string url_new=url.substr(found+3);
+				size_t found1 =url_new.find_first_of("/");
+				string host =url_new.substr(0,found1);
+				string path =url_new.substr(found1);
+				LOG("HTTP-host", host);
+				LOG("HTTP-path", path);
+				
+				boost::asio::io_service io_service_fileDl;
+				client c(io_service_fileDl, host, path);
+                		io_service_fileDl.run();
+				
+                                if (url != "") {
+                                        bot.message(to, "Processing protocol:" + protocol + ", host:" + host + ", path:" + path);
+                                }
+
+				boost::filesystem::path file_path{boost::filesystem::current_path().string() + "/downloaded.txt"};
+				std::ofstream out(file_path.string());
+				LOG("FILE-path", file_path.string());
+				out << c.responseBody;
+				out.close();
+                        }
+
+                });
 		
 		// Main execution
 		bot.loop();

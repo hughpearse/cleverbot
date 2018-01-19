@@ -1,3 +1,13 @@
+//
+// async_client.cpp
+// ~~~~~~~~~~~~~~~~
+//
+// Copyright (c) 2003-2017 Christopher M. Kohlhoff (chris at kohlhoff dot com)
+//
+// Distributed under the Boost Software License, Version 1.0. (See accompanying
+// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+// http://www.boost.org/doc/libs/1_66_0/doc/html/boost_asio/example/cpp03/http/client/async_client.cpp
+
 #ifndef HTTPLIB_H
 #define HTTPLIB_H
 
@@ -16,6 +26,8 @@ class client
 public:
 	std::vector<std::string> responseHeaders;
 	std::string responseBody;
+	std::ostringstream ss;
+
 	client(boost::asio::io_service& io_service,
 		const std::string& server, 
 		const std::string& path)
@@ -156,19 +168,19 @@ private:
 			// Write whatever content we already have to output.
 			if (response_.size() > 0)
 			{
-				boost::asio::streambuf::const_buffers_type bufs = response_.data();
-				std::string s(boost::asio::buffers_begin(bufs), boost::asio::buffers_begin(bufs) + response_.size());
-				responseBody = s;
-				
+				//boost::asio::streambuf::const_buffers_type bufs = response_.data();
+				//std::string s(boost::asio::buffers_begin(bufs), boost::asio::buffers_begin(bufs) + response_.size());
+				//ss << s;
+				ss << &response_;
 			}
-			//	std::cout << "";
-			//	std::cout << &response_;
 
 			// Start reading remaining data until EOF.
-			boost::asio::async_read(socket_, response_,
-					boost::asio::transfer_at_least(1),
-					boost::bind(&client::handle_read_content, this,
-						boost::asio::placeholders::error));
+			//while(boost::asio::async_read(socket_, response_, boost::asio::transfer_at_least(1), boost::bind(&client::handle_read_content, this, boost::asio::placeholders::error))){
+			boost::system::error_code error;
+			while (boost::asio::read(socket_, response_, boost::asio::transfer_at_least(1), error)){
+				ss << &response_;
+			}
+			responseBody = ss.str();
 		}
 		else
 		{
