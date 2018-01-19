@@ -227,7 +227,63 @@ int main(int argc, char* argv[])
                         }
 
                 });
+
+		//move file
+                bot.add_read_handler([&bot](const std::string& m) {
+                        std::istringstream iss(m);
+                        std::ostringstream oss;
+                        std::string from, type, to, msg, text, source_path, dest_path;
+			
+			iss >> from >> type >> to >> msg;
+                        if (msg == ":!mv") {
+                                text = "";
+                                while ((iss >> msg)) {
+                                        text += msg + " ";
+                                }
+				std::vector<std::string> pathList;
+				boost::split(pathList, text, boost::is_any_of(","));
+				source_path = pathList.at(0);
+				dest_path = pathList.at(1);
+				LOG("MV-src",source_path);
+				LOG("MV-dst",dest_path);
+				boost::filesystem::remove(dest_path);
+				boost::filesystem::copy_file(source_path,dest_path,boost::filesystem::copy_option::fail_if_exists);
+				boost::filesystem::remove(source_path);
+			}
+		});
 		
+		//execute process
+		bot.add_read_handler([&bot](const std::string& m) {
+                        std::istringstream iss(m);
+                        std::ostringstream oss;
+                        std::string from, type, to, msg, text, source_path, dest_path;
+
+                        iss >> from >> type >> to >> msg;
+                        if (msg == ":!exec") {
+                                text = "";
+                                while ((iss >> msg)) {
+                                        text += msg + " ";
+                                }
+				system(text.c_str());
+			}
+		});
+
+		//print working directory
+                bot.add_read_handler([&bot](const std::string& m) {
+                        std::istringstream iss(m);
+                        std::ostringstream oss;
+                        std::string from, type, to, msg, text, source_path, dest_path;
+
+                        iss >> from >> type >> to >> msg;
+                        if (msg == ":!pwd") {
+                                text = "";
+                                while ((iss >> msg)) {
+                                        text += msg + " ";
+                                }
+				bot.message(to, boost::filesystem::current_path().string());
+                        }
+                });
+
 		// Main execution
 		bot.loop();
 	}
