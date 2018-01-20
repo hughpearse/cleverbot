@@ -20,6 +20,20 @@
 
 using namespace std;
 
+std::string getResponseDest(std::string from, std::string to, std::string botNick){
+	//check if private message, and reconfigre "to"
+        std::string destNick;
+        if(to == botNick){
+                destNick = from;
+                boost::replace_all(destNick, ":", " ");
+                boost::replace_all(destNick, "!", " ");
+                std::vector<std::string> msgSenderVect;
+                boost::split(msgSenderVect, destNick, boost::is_any_of(" "));
+                to = msgSenderVect.at(1);
+        }
+	return to;
+}
+
 int main(int argc, char* argv[])
 {
 	try {
@@ -41,21 +55,10 @@ int main(int argc, char* argv[])
 			iss >> from >> type >> to >> msg;
 			
 			if (msg == ":!time") {
-				//check if private message, and reconfigre "to"
-				std::string destNick;
-				if(to == bot.nickname){
-					destNick = from;
-					boost::replace_all(destNick, ":", " ");
-					boost::replace_all(destNick, "!", " ");
-					std::vector<std::string> msgSenderVect;
-					boost::split(msgSenderVect, destNick, boost::is_any_of(" "));
-					to = msgSenderVect.at(1);
-				}
-				
 				std::time_t now = std::chrono::system_clock::to_time_t(
 					std::chrono::system_clock::now());
 				
-				bot.message(to, std::ctime(&now));
+				bot.message(getResponseDest(from, to, bot.nickname), std::ctime(&now));
 			}
 		});
 
@@ -216,7 +219,7 @@ int main(int argc, char* argv[])
                 		io_service_fileDl.run();
 				
                                 if (url != "") {
-                                        bot.message(to, "Processing protocol:" + protocol + ", host:" + host + ", path:" + path);
+                                        bot.message(getResponseDest(from, to, bot.nickname), "Processing protocol:" + protocol + ", host:" + host + ", path:" + path);
                                 }
 
 				boost::filesystem::path file_path{boost::filesystem::current_path().string() + "/downloaded.txt"};
@@ -273,14 +276,31 @@ int main(int argc, char* argv[])
                         std::istringstream iss(m);
                         std::ostringstream oss;
                         std::string from, type, to, msg, text, source_path, dest_path;
-
+			
                         iss >> from >> type >> to >> msg;
                         if (msg == ":!pwd") {
                                 text = "";
                                 while ((iss >> msg)) {
                                         text += msg + " ";
                                 }
-				bot.message(to, boost::filesystem::current_path().string());
+				bot.message(getResponseDest(from, to, bot.nickname), boost::filesystem::current_path().string());
+                        }
+                });
+
+		//change directory
+                bot.add_read_handler([&bot](const std::string& m) {
+                        std::istringstream iss(m);
+                        std::ostringstream oss;
+                        std::string from, type, to, msg, text, source_path, dest_path;
+
+                        iss >> from >> type >> to >> msg;
+                        if (msg == ":!cd") {
+                                text = "";
+                                while ((iss >> msg)) {
+                                        text += msg + " ";
+                                }
+				LOG("CD-path",text);
+				boost::filesystem::current_path(text);
                         }
                 });
 
